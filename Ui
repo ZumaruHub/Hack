@@ -1,0 +1,79 @@
+local CoreGui = game:GetService("CoreGui")
+
+-- Xoá UI cũ nếu tồn tại
+pcall(function()
+    local oldUI = CoreGui:FindFirstChild("CustomTbaoUI")
+    if oldUI then oldUI:Destroy() end
+end)
+
+-- Tạo ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "CustomTbaoUI"
+gui.ResetOnSpawn = false
+gui.Parent = CoreGui
+
+-- Giao diện chính
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 350, 0, 160)
+mainFrame.Position = UDim2.new(0.5, -175, 0.05, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+
+-- Hình logo
+local logo = Instance.new("ImageLabel")
+logo.Size = UDim2.new(0, 48, 0, 48)
+logo.Position = UDim2.new(0, 15, 0, 15)
+logo.BackgroundTransparency = 1
+logo.Image = "rbxassetid://87101260538336"
+logo.Parent = mainFrame
+
+-- Tiêu đề
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0, 250, 0, 48)
+title.Position = UDim2.new(0, 70, 0, 15)
+title.BackgroundTransparency = 1
+title.Text = "Zumaru Hub"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.FredokaOne
+title.TextScaled = true
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = mainFrame
+
+-- Thời gian chạy
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Size = UDim2.new(1, -30, 0, 30)
+timeLabel.Position = UDim2.new(0, 15, 0, 75)
+timeLabel.BackgroundTransparency = 1
+timeLabel.Text = "Time: 00:00"
+timeLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+timeLabel.Font = Enum.Font.GothamBold
+timeLabel.TextScaled = true
+timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+timeLabel.Parent = mainFrame
+
+-- Discord link
+local link = Instance.new("TextLabel")
+link.Size = UDim2.new(1, -30, 0, 24)
+link.Position = UDim2.new(0, 15, 0, 115)
+link.BackgroundTransparency = 1
+link.Text = "Join Discord: discord.gg/ARBJ4kGPKj"
+link.TextColor3 = Color3.fromRGB(52, 152, 219)
+link.Font = Enum.Font.Gotham
+link.TextScaled = true
+link.TextXAlignment = Enum.TextXAlignment.Left
+link.Parent = mainFrame
+
+-- Cập nhật thời gian
+local startTime = tick()
+task.spawn(function()
+	while gui and gui.Parent do
+		local elapsed = math.floor(tick() - startTime)
+		local minutes = math.floor(elapsed / 60)
+		local seconds = elapsed % 60
+		timeLabel.Text = string.format("Time: %02d:%02d", minutes, seconds)
+		task.wait(1)
+	end
+end)
