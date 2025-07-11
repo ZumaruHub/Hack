@@ -1332,11 +1332,7 @@ Window = Fluent:CreateWindow({
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl 
 })
-local Tabs = {
-    Discord = Window:AddTab({ Title = "Discord", Icon = "" }),
-    Farm = Window:AddTab({ Title = "Farm", Icon = "" }),
-}
-
+Discord = Window:AddTab({ Title = "Discord", Icon = "" }),
 Tabs.Discord:AddButton({
     Title = "Discord",
     Callback = function()
@@ -1346,6 +1342,7 @@ Tabs.Discord:AddButton({
     end
 })
 
+Farm = Window:AddTab({ Title = "Farm", Icon = "" }),
   Dropdown = Farm:AddDropdown("DropdownFarm", {
     Title = "Select Weapon",
     Values = {"Melee","Sword","Blox Fruit"},
