@@ -1,0 +1,879 @@
+
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local player = Players.LocalPlayer
+
+local blur = Instance.new("BlurEffect", Lighting)
+blur.Size = 0
+TweenService:Create(blur, TweenInfo.new(0.5), {Size = 24}):Play()
+
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "StellarLoader"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(1, 0, 1, 0)
+frame.BackgroundTransparency = 1
+
+local bg = Instance.new("Frame", frame)
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+bg.BackgroundTransparency = 1
+bg.ZIndex = 0
+TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 0.3}):Play()
+
+local word = "TBAOHUB"
+local letters = {}
+
+local function tweenOutAndDestroy()
+	for _, label in ipairs(letters) do
+		TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1, TextSize = 20}):Play()
+	end
+	TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+	TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
+	wait(0.6)
+	screenGui:Destroy()
+	blur:Destroy()
+end
+
+for i = 1, #word do
+	local char = word:sub(i, i)
+
+	local label = Instance.new("TextLabel")
+	label.Text = char
+	label.Font = Enum.Font.GothamBlack
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 1 
+	label.TextTransparency = 1
+	label.TextScaled = false
+	label.TextSize = 30 
+	label.Size = UDim2.new(0, 60, 0, 60)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.new(0.5, (i - (#word / 2 + 0.5)) * 65, 0.5, 0)
+	label.BackgroundTransparency = 1
+	label.Parent = frame
+
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(222, 38, 207)), 
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))   
+	})
+	gradient.Rotation = 90
+	gradient.Parent = label
+
+	local tweenIn = TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 0, TextSize = 60})
+	tweenIn:Play()
+
+	table.insert(letters, label)
+	wait(0.25)
+end
+
+wait(2)
+
+tweenOutAndDestroy()
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+local CoreGui = game:GetService("StarterGui")
+    CoreGui:SetCore("SendNotification", {
+        Title = "Tbao Hub",
+        Text = "Loading script",
+        Icon = "rbxthumb://type=Asset&id=95472747120306&w=150&h=150",
+        Duration = 6,
+        Callback = AllowRunServiceBind,
+    })
+    
+
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UIS = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+
+
+local Window = Fluent:CreateWindow({
+    Title = "Tbao Hub | Steal a Branrot",
+    SubTitle = "by thaibao7444",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(501, 340),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+
+
+local Tabs = {
+	InfoTab = Window:AddTab({
+		Title = "Info",
+		Icon = "rbxassetid://4483345998"
+	}),
+	MainTab = Window:AddTab({
+		Title = "Main",
+		Icon = "rbxassetid://4483345998"
+	}),
+	CombatTab = Window:AddTab({
+		Title = "Combat",
+		Icon = "rbxassetid://4483345998"
+		}),
+		VisualTab = Window:AddTab({
+		Title = "Visual",
+		Icon = "rbxassetid://4483345998"
+		}),
+		MiscTab = Window:AddTab({
+		Title = "Misc",
+		Icon = "rbxassetid://4483345998"
+		}),
+	Settings = Window:AddTab({
+		Title = "Setting",
+		Icon = "settings"
+		}),
+}
+
+
+
+
+
+
+
+local Options = Fluent.Options
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local baseLockEnabled = false
+local onoffgui1 = false
+
+
+local displayGui = Instance.new("ScreenGui")
+displayGui.Name = "BaseLockDisplay"
+displayGui.ResetOnSpawn = false
+displayGui.Parent = PlayerGui
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(0, 200, 0, 60)
+textLabel.Position = UDim2.new(0.5, -100, 0.1, 0)
+textLabel.BackgroundTransparency = 1
+textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel.TextScaled = true
+textLabel.Font = Enum.Font.SourceSansBold
+textLabel.Text = "Loading..."
+textLabel.Active = true
+textLabel.Draggable = true
+textLabel.Visible = onoffgui1
+textLabel.Parent = displayGui
+
+
+local function findBaseTextLabel()
+    local playerName = Player.Name
+    local targetText = playerName .. "'s Base"
+
+    for _, descendant in pairs(Workspace:GetDescendants()) do
+        if descendant:IsA("TextLabel") and descendant.Text == targetText then
+            return descendant
+        end
+    end
+    return nil
+end
+
+
+local function updateBaseLockVisual()
+    if onoffgui1 then
+        local textLabelFound = findBaseTextLabel()
+        if textLabelFound then
+            local touchPart = textLabelFound.Parent.Parent.Parent.Parent:FindFirstChild("Purchases")
+            if touchPart then
+                touchPart = touchPart:FindFirstChild("PlotBlock")
+                if touchPart then
+                    touchPart = touchPart:FindFirstChild("Main")
+                    if touchPart and touchPart:FindFirstChild("BillboardGui") then
+                        local remainingTimeText = touchPart.BillboardGui:FindFirstChild("RemainingTime")
+                        if remainingTimeText and remainingTimeText:IsA("TextLabel") then
+                            textLabel.Text = "Locked: " .. remainingTimeText.Text
+                        else
+                            textLabel.Text = "Locked: No Remaining Time"
+                        end
+                    else
+                        textLabel.Text = "Locked: No BillboardGui"
+                    end
+                else
+                    textLabel.Text = "Locked: No PlotBlock"
+                end
+            else
+                textLabel.Text = "Locked: No Purchases"
+            end
+        else
+            textLabel.Text = "Locked: No Base Found"
+        end
+    end
+end
+
+
+RunService.RenderStepped:Connect(function()
+    textLabel.Visible = onoffgui1
+    if onoffgui1 then
+        updateBaseLockVisual()
+    end
+end)
+
+
+
+local ScreenGui = Instance.new("ScreenGui")
+local ImageButton = Instance.new("ImageButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ImageButton.Parent = ScreenGui
+ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ImageButton.BorderSizePixel = 0
+ImageButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
+ImageButton.Size = UDim2.new(0, 50, 0, 50)
+ImageButton.Draggable = true
+ImageButton.Image = "http://www.roblox.com/asset/?id=95472747120306"
+
+UICorner.CornerRadius = UDim.new(0, 10) 
+UICorner.Parent = ImageButton
+
+ImageButton.MouseButton1Down:Connect(function()
+	game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
+end)
+
+Tabs.InfoTab:AddButton({
+	Title = "Copy link discord",
+	Description = "discord.gg/bYb3EweNk7",
+	Callback = function()
+	setclipboard("discord.gg/bYb3EweNk7")
+	end
+})
+Tabs.MainTab:AddSection("Coin")
+
+
+
+
+local TeleportClaimCoins = false
+local claimThread
+
+local function AutoClaimCoins()
+    if claimThread then
+        task.cancel(claimThread)
+        claimThread = nil
+    end
+
+    if TeleportClaimCoins then
+        claimThread = task.spawn(function()
+            while TeleportClaimCoins do
+                for i = 1, 10 do
+                    local args = { i }
+                    local success, err = pcall(function()
+                        game:GetService("ReplicatedStorage")
+                            :WaitForChild("Packages")
+                            :WaitForChild("Net")
+                            :WaitForChild("RE/PlotService/ClaimCoins")
+                            :FireServer(unpack(args))
+                    end)
+
+                    if not success then
+                    end
+                    task.wait()
+                end
+            end
+        end)
+    end
+end
+
+local Toggle = Tabs.MainTab:AddToggle("MyToggle", {
+    Title = "Auto claim coin",
+    Value = false,
+    Callback = function(state)
+        TeleportClaimCoins = state
+        AutoClaimCoins()
+    end
+})
+
+
+
+Tabs.MainTab:AddSection("Sell")
+
+
+
+local sellSlots = {}
+for i = 1, 10 do
+    table.insert(sellSlots, tostring(i))
+end
+
+local selectedSlot = 1 
+
+
+local Dropdown = Tabs.MainTab:AddDropdown("SellDropdown", {
+    Title = "Select branrot number sell",
+    Values = sellSlots,
+    Multi = false,
+    Default = 1,
+})
+
+
+Dropdown:OnChanged(function(Value)
+    selectedSlot = tonumber(Value)
+end)
+
+
+Tabs.MainTab:AddButton({
+    Title = "Auto sell select branrot",
+    Description = "",
+    Callback = function()
+        local args = { selectedSlot }
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Packages")
+            :WaitForChild("Net")
+            :WaitForChild("RE/PlotService/Sell")
+            :FireServer(unpack(args))
+    end
+})
+
+
+
+Tabs.MainTab:AddSection("Tool")
+
+
+
+
+local selectedTool = nil
+
+
+local toolOptions = {}
+for _, item in pairs(game.ReplicatedStorage.Items:GetChildren()) do
+    if item:IsA("Tool") then
+        table.insert(toolOptions, item.Name)
+    end
+end
+
+local MultiDropdown = Tabs.MainTab:AddDropdown("MultiDropdown", {
+    Title = "Select tool",
+    Description = "",
+    Values = toolOptions,
+    Default = toolOptions[1] or "",
+    Multi = false,
+    Callback = function(Value)
+        selectedTool = Value
+    end
+})
+
+
+Tabs.MainTab:AddButton({
+    Title = "Get select tool",
+    Description = "",
+    Callback = function()
+        if selectedTool and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            local tool = game.ReplicatedStorage.Items:FindFirstChild(selectedTool)
+            if tool and tool:IsA("Tool") then
+                local clonedTool = tool:Clone()
+                clonedTool.Parent = Player.Backpack
+            else
+            end
+        else
+        end
+    end
+})
+
+Tabs.MainTab:AddButton({
+    Title = "Get all tool",
+    Description = "",
+    Callback = function()
+        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            local givenTools = {}
+            for _, item in pairs(game.ReplicatedStorage.Items:GetChildren()) do
+                if item:IsA("Tool") then
+                    local clonedTool = item:Clone()
+                    clonedTool.Parent = Player.Backpack
+                    table.insert(givenTools, item.Name)
+                end
+            end
+            if #givenTools > 0 then
+                Fluent:Notify({
+                    Title = "Tool give",
+                    Content = "You received all tools: " .. table.concat(givenTools, ", "),
+                    Duration = 5
+                })
+            else
+            end
+        else
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+Tabs.MainTab:AddSection("Teleport")
+
+
+
+
+Tabs.MainTab:AddButton({
+    Title = "Tween to base",
+    Description = "Tween you character to you base",
+    Callback = function()
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local textLabel = findBaseTextLabel()
+            if textLabel then
+                local basePart = textLabel.Parent.Parent.Parent
+                if basePart:IsA("BasePart") or basePart:IsA("Model") then
+                    local targetCFrame = basePart:IsA("BasePart") and basePart.CFrame + Vector3.new(0, 5, 0) or basePart:GetPrimaryPartCFrame() + Vector3.new(0, 5, 0)
+                    local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+                    local tween = TweenService:Create(Player.Character.HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                    tween:Play()
+                else
+                end
+            else
+            end
+        else
+        end
+    end
+})
+
+Tabs.MainTab:AddButton({
+    Title = "Lock base",
+    Description = "Teleport to base lock part",
+    Callback = function()
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            local textLabel = findBaseTextLabel()
+            if textLabel then
+                local touchPart = textLabel.Parent.Parent.Parent.Parent:FindFirstChild("Purchases")
+                if touchPart then
+                    touchPart = touchPart:FindFirstChild("PlotBlock")
+                    if touchPart then
+                        touchPart = touchPart:FindFirstChild("Main")
+                        if touchPart and touchPart:IsA("BasePart") then
+                            local targetCFrame = touchPart.CFrame + Vector3.new(0, 3, 0)
+                            Player.Character.HumanoidRootPart.CFrame = targetCFrame
+                        else
+                        end
+                    else
+                    end
+                else
+                end
+            else
+            end
+        else
+        end
+    end
+})
+
+Tabs.MainTab:AddButton({
+    Title = "Reset character",
+    Description = "",
+    Callback = function()
+        if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            Player.Character:FindFirstChildOfClass("Humanoid").Health = 0
+        else
+        end
+    end
+})
+
+
+
+
+
+
+
+local SlapSpeed = 0.1
+local AutoSlap = false
+
+
+local slapTools = {
+    "Tung Bat",
+    "Blackhole Slap",
+    "Dark Matter Slap",
+    "Dev Slap",
+    "Devil Slap",
+    "Diamond Slap",
+    "Emerald Slap",
+    "Flame Slap",
+    "Gold Slap",
+    "Iron Slap",
+    "Nuclear Slap",
+    "Ruby Slap",
+    "Slap"
+}
+
+
+local Toggle = Tabs.CombatTab:AddToggle("MyToggle", {
+    Title = "Auto slap",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        AutoSlap = Value
+    end
+})
+
+
+task.spawn(function()
+    while true do
+        if AutoSlap and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and Player.Character:FindFirstChildOfClass("Humanoid") then
+            local myRoot = Player.Character.HumanoidRootPart
+            local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+            local foundTarget = false
+            
+
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= Player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local theirRoot = plr.Character.HumanoidRootPart
+                    local dist = (myRoot.Position - theirRoot.Position).Magnitude
+                    
+          
+                    if dist <= 10 then
+                        foundTarget = true
+                        local toolFound = false
+                        
+               
+                        for _, toolName in pairs(slapTools) do
+                            local tool = Player.Backpack:FindFirstChild(toolName) or Player.Character:FindFirstChild(toolName)
+                            if tool then
+                                toolFound = true
+                    
+                                if not Player.Character:FindFirstChild(toolName) then
+                                    humanoid:EquipTool(tool)
+                                    task.wait(0.1) 
+                                end
+                                
+                      
+                                if tool:IsA("Tool") and tool.Parent == Player.Character then
+                                    local success, err = pcall(function()
+                                        tool:Activate()
+                                    end)
+                                    if not success then
+                                    end
+                                end
+                                break 
+                            end
+                        end
+                        if not toolFound then
+                        end
+                        break 
+                    end
+                end
+            end
+        end
+        task.wait(SlapSpeed)
+    end
+end)
+
+
+
+
+local Toggle = Tabs.VisualTab:AddToggle("MyToggle", {
+    Title = "Show base lock",
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        onoffgui1 = state
+    end
+})
+
+
+
+
+local Toggle = Tabs.VisualTab:AddToggle("MyToggle", {
+	Title = "No clip",
+	Default = false 
+})
+Toggle:OnChanged(function(Value)
+	    getgenv().NoclipEnabled = Value 
+        local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local function noclip()
+    local player = Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part.CanCollide == true then
+            part.CanCollide = false
+        end
+    end
+end
+local function noclipLoop()
+    RunService.Stepped:Connect(function()
+        if getgenv().NoclipEnabled then
+            noclip()
+        end
+    end)
+end
+noclipLoop()
+end)
+
+
+
+Tabs.VisualTab:AddSection("Esp")
+
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local espNameEnabled = false
+local espDistanceEnabled = false
+local espConnections = {}
+
+
+local function clearESP()
+    for _, v in pairs(espConnections) do
+        if v.TextLabel then
+            v.TextLabel:Destroy()
+        end
+    end
+    espConnections = {}
+end
+
+
+local function createESP()
+    clearESP()
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = player.Character.HumanoidRootPart
+
+            local textLabel = Drawing.new("Text")
+            textLabel.Size = 13
+            textLabel.Center = true
+            textLabel.Outline = true
+            textLabel.Color = Color3.fromRGB(0, 162, 255) 
+            textLabel.Visible = false
+
+            espConnections[#espConnections + 1] = {
+                Player = player,
+                HRP = hrp,
+                TextLabel = textLabel
+            }
+        end
+    end
+end
+
+
+RunService.RenderStepped:Connect(function()
+    for _, esp in pairs(espConnections) do
+        local player = esp.Player
+        local hrp = esp.HRP
+        local textLabel = esp.TextLabel
+
+        if player and player.Character and hrp and hrp.Parent then
+            local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
+            if onScreen then
+                local dist = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - hrp.Position).Magnitude)
+                local nameText = espNameEnabled and player.Name or ""
+                local distanceText = espDistanceEnabled and ("[" .. dist .. "m]") or ""
+                local fullText = nameText .. (nameText ~= "" and " " or "") .. distanceText
+
+                if fullText ~= "" then
+                    textLabel.Text = fullText
+                    textLabel.Position = Vector2.new(screenPos.X, screenPos.Y - 15)
+                    textLabel.Visible = true
+                else
+                    textLabel.Visible = false
+                end
+            else
+                textLabel.Visible = false
+            end
+        end
+    end
+end)
+
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        task.wait(1)
+        createESP()
+    end)
+end)
+
+
+Players.PlayerRemoving:Connect(function()
+    createESP()
+end)
+
+
+local ToggleName = Tabs.VisualTab:AddToggle("ESPNameToggle", {
+    Title = "Esp name",
+    Default = false
+})
+
+ToggleName:OnChanged(function(state)
+    espNameEnabled = state
+    if espNameEnabled or espDistanceEnabled then
+        createESP()
+    else
+        clearESP()
+    end
+end)
+
+
+local ToggleDistance = Tabs.VisualTab:AddToggle("ESPDistanceToggle", {
+    Title = "Esp distance",
+    Default = false
+})
+
+ToggleDistance:OnChanged(function(state)
+    espDistanceEnabled = state
+    if espNameEnabled or espDistanceEnabled then
+        createESP()
+    else
+        clearESP()
+    end
+end)
+
+
+local antiAFK = false
+local fpsBoost = false
+local spinBot = false
+
+
+Tabs.MiscTab:AddButton({
+    Title = "Rejoin",
+    Description = "",
+    Callback = function()
+        local success, err = pcall(function()
+            TeleportService:Teleport(game.PlaceId, Player)
+        end)
+        if success then
+        else
+        end
+    end
+})
+
+
+
+
+Tabs.MiscTab:AddButton({
+    Title = "Server hop",
+    Description = "",
+    Callback = function()
+        local Http = game:GetService("HttpService")
+local TPS = game:GetService("TeleportService")
+local Api = "https://games.roblox.com/v1/games/"
+local _place = game.PlaceId
+local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=100"
+function ListServers(cursor)
+   local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+   return Http:JSONDecode(Raw)
+end
+local Server, Next; repeat
+   local Servers = ListServers(Next)
+   Server = Servers.data[1]
+   Next = Servers.nextPageCursor
+until Server
+TPS:TeleportToPlaceInstance(_place,Server.id,game.Players.LocalPlayer)
+    end
+})
+
+local Toggle = Tabs.MiscTab:AddToggle("MyToggle", {
+    Title = "Fps boost",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        fpsBoost = Value
+        if fpsBoost then
+            settings().Rendering.QualityLevel = 1
+            game:GetService("Lighting").GlobalShadows = false
+            game:GetService("Lighting").FogEnd = 9e9
+        else
+            settings().Rendering.QualityLevel = 6 
+            game:GetService("Lighting").GlobalShadows = true
+            game:GetService("Lighting").FogEnd = 100000
+        end
+    end
+})
+
+
+local Toggle = Tabs.MiscTab:AddToggle("MyToggle", {
+    Title = "Anti afk",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        antiAFK = Value
+        if antiAFK then
+            spawn(function()
+                while antiAFK do
+                    task.wait(30) 
+                    local virtualUser = game:GetService("VirtualUser")
+                    virtualUser:CaptureController()
+                    virtualUser:ClickButton2(Vector2.new())
+                end
+            end)         
+        else
+        end
+    end
+})
+
+
+local Toggle = Tabs.MiscTab:AddToggle("MyToggle", {
+    Title = "Spin bot",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        spinBot = Value
+        if spinBot and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            spawn(function()
+                while spinBot do
+                    local root = Player.Character.HumanoidRootPart
+                    root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(5), 0) 
+                    task.wait(0.01) 
+                end
+            end)
+        else
+        end
+    end
+})
+
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+
+SaveManager:IgnoreThemeSettings()
+
+
+SaveManager:SetIgnoreIndexes({})
+
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Tbao Hub",
+    Content = "The script has been loaded",
+    Duration = 8
+})
+
+
+SaveManager:LoadAutoloadConfig()
+
+    
