@@ -1,0 +1,1432 @@
+local CoreGui = game:GetService("StarterGui")
+    CoreGui:SetCore("SendNotification", {
+        Title = "ZGT Hub",
+        Text = "Loading script",
+        Icon = "rbxthumb://type=Asset&id=94681692564378&w=150&h=150",
+        Duration = 7,
+        Callback = AllowRunServiceBind,
+    })
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+	Title = "ZGT Hub | Dead Rails",
+	SubTitle = "by duonglangthang",
+	TabWidth = 160,
+	Size = UDim2.fromOffset(528, 350),
+	Acrylic = false,
+	Theme = "Dark",
+	MinimizeKey = Enum.KeyCode.LeftControl 
+})
+
+local Tabs = {
+	Info = Window:AddTab({
+		Title = "Info",
+		Icon = "crown"
+	}),
+	Main = Window:AddTab({
+		Title = "Combat",
+		Icon = "sword"
+		}),
+		TpT = Window:AddTab({
+		Title = "Teleport",
+		Icon = "send"
+		}),
+		Visual = Window:AddTab({
+		Title = "Visual",
+		Icon = "hammer"
+		}),
+		Local = Window:AddTab({
+		Title = "Local",
+		Icon = "cpu"
+		}),
+		Esp = Window:AddTab({
+		Title = "Esp",
+		Icon = "ghost"
+		}),
+		Misc = Window:AddTab({
+		Title = "Misc",
+		Icon = "wrench"
+		}),
+		Settings = Window:AddTab({
+		Title = "Setting",
+		Icon = "settings"
+		}),
+		}
+		local Options = Fluent.Options
+
+local ScreenGui = Instance.new("ScreenGui")
+local ImageButton = Instance.new("ImageButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ImageButton.Parent = ScreenGui
+ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ImageButton.BorderSizePixel = 0
+ImageButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
+ImageButton.Size = UDim2.new(0, 50, 0, 50)
+ImageButton.Draggable = true
+ImageButton.Image = "http://www.roblox.com/asset/?id=94681692564378"
+
+UICorner.CornerRadius = UDim.new(0, 10) 
+UICorner.Parent = ImageButton
+
+ImageButton.MouseButton1Down:Connect(function()
+	game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
+end)
+
+Tabs.Info:AddButton({
+	Title = "Copy link discord",
+	Description = "discord.gg/zgthub",
+	Callback = function()
+	setclipboard("discord.gg/zgthub")
+	end
+})
+		
+		Tabs.Info:AddParagraph({
+        Title = "Note",
+        Content = "Script này không thể cưỡi ngựa"
+    })
+		
+		
+	Tabs.Main:AddSection("Aimbot")	
+	
+	
+		getgenv().Smoothness = 0.4
+getgenv().aimbotEnabled = false
+getgenv().aimbotFOV = 0
+getgenv().aimbotFOVColor = Color3.fromRGB(255, 0, 0) 
+getgenv().aimbotPart = "Head"
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local validNPCs = {}
+
+local DrawingFOV = Drawing.new("Circle")
+DrawingFOV.Radius = getgenv().aimbotFOV
+DrawingFOV.Thickness = 1
+DrawingFOV.Filled = false
+DrawingFOV.Transparency = 1
+DrawingFOV.Color = getgenv().aimbotFOVColor
+DrawingFOV.Visible = getgenv().aimbotEnabled
+
+local function isNPC(obj)
+    return obj:IsA("Model") 
+        and obj:FindFirstChild("Humanoid") 
+        and obj.Humanoid.Health > 0 
+        and obj:FindFirstChild(getgenv().aimbotPart) 
+        and not Players:GetPlayerFromCharacter(obj)
+end
+
+local function updateNPCs()
+    validNPCs = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if isNPC(obj) then
+            table.insert(validNPCs, obj)
+        end
+    end
+end
+
+local function getClosestNPC()
+    if not getgenv().aimbotEnabled then return nil end 
+
+    local closestNPC, closestDistance = nil, math.huge
+    local fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    for _, npc in ipairs(validNPCs) do
+        local part = npc:FindFirstChild(getgenv().aimbotPart)
+        if part then
+            local screenPosition, onScreen = Camera:WorldToViewportPoint(part.Position)
+            if onScreen then
+                local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - fovCenter).Magnitude
+                if distance < getgenv().aimbotFOV and distance < closestDistance then
+                    closestNPC = npc
+                    closestDistance = distance
+                end
+            end
+        end
+    end
+    return closestNPC
+end
+
+RunService.RenderStepped:Connect(function()
+    DrawingFOV.Visible = getgenv().aimbotEnabled
+    DrawingFOV.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    DrawingFOV.Radius = getgenv().aimbotFOV 
+
+    if getgenv().aimbotEnabled then
+        local targetNPC = getClosestNPC()
+        if targetNPC then
+            local targetPart = targetNPC:FindFirstChild(getgenv().aimbotPart)
+            if targetPart then
+                local targetPosition = targetPart.Position
+                local cameraPosition = Camera.CFrame.Position
+                local direction = (targetPosition - cameraPosition).Unit
+                local targetCFrame = CFrame.new(cameraPosition, cameraPosition + direction)
+
+              
+                Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, getgenv().Smoothness)
+            end
+        end
+    end
+end)
+
+workspace.DescendantAdded:Connect(function(descendant)
+    if isNPC(descendant) then
+        table.insert(validNPCs, descendant)
+    end
+end)
+
+workspace.DescendantRemoving:Connect(function(descendant)
+    for i = #validNPCs, 1, -1 do
+        if validNPCs[i] == descendant then
+            table.remove(validNPCs, i)
+            break
+        end
+    end
+end)
+
+updateNPCs()
+
+
+
+
+		
+		   local Toggle = Tabs.Main:AddToggle("MyToggle", {Title = "Aimbot zombie", Default = false })
+
+    Toggle:OnChanged(function(value)
+        getgenv().aimbotEnabled = value
+    end)
+    
+    
+    
+    local Dropdown = Tabs.Main:AddDropdown("Dropdown", {
+        Title = "Aimbot part",
+        Values = {"Head", "HumanoidRootPart"},
+        Multi = false,
+        Default = 1,
+    })
+
+    Dropdown:SetValue("Head")
+
+    Dropdown:OnChanged(function(value)
+        getgenv().aimbotPart = value
+    end)
+    
+    
+    local Slider = Tabs.Main:AddSlider("Slider", {
+        Title = "Fov value",
+        Description = "",
+        Default = 60,
+        Min = 0,
+        Max = 99.7,
+        Rounding = 1,
+        Callback = function(value)
+            getgenv().aimbotFOV = value 
+        end
+    })
+    
+    
+    
+    
+    Tabs.Main:AddSection("Hitbox")	
+    
+    getgenv().hitboxNPC = false
+getgenv().hitboxValue = false
+getgenv().hitboxColor = Color3.new(1, 0, 0)  
+
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local validNPCs = {}
+
+
+local function isNPC(obj)
+    return obj:IsA("Model")
+        and obj:FindFirstChild("Humanoid")
+        and obj.Humanoid.Health > 0
+        and obj:FindFirstChild("HumanoidRootPart")
+        and not Players:GetPlayerFromCharacter(obj)
+end
+
+
+local function updateNPCs()
+    validNPCs = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if isNPC(obj) then
+            table.insert(validNPCs, obj)
+        end
+    end
+end
+
+
+local function modifyHitboxes()
+    for _, npc in ipairs(validNPCs) do
+        local rootPart = npc:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            if getgenv().hitboxNPC then
+                rootPart.Size = Vector3.new(getgenv().hitboxValue, getgenv().hitboxValue, getgenv().hitboxValue)
+                rootPart.Transparency = 0.5
+                rootPart.Color = getgenv().hitboxColor
+                rootPart.Material = Enum.Material.Neon
+            else
+                rootPart.Size = Vector3.new(2, 2, 1) 
+                rootPart.Transparency = 0
+                rootPart.Material = Enum.Material.Plastic
+            end
+        end
+    end
+end
+
+
+workspace.DescendantAdded:Connect(function(descendant)
+    if isNPC(descendant) then
+        table.insert(validNPCs, descendant)
+        modifyHitboxes()
+    end
+end)
+
+
+workspace.DescendantRemoving:Connect(function(descendant)
+    for i = #validNPCs, 1, -1 do
+        if validNPCs[i] == descendant then
+            table.remove(validNPCs, i)
+            break
+        end
+    end
+end)
+
+
+RunService.RenderStepped:Connect(function()
+    modifyHitboxes()
+end)
+
+
+local function monitorHitboxToggle()
+    while true do
+        modifyHitboxes()
+        wait() 
+    end
+end
+
+
+task.spawn(monitorHitboxToggle)
+
+
+updateNPCs()
+
+		   local Toggle = Tabs.Main:AddToggle("MyToggle", {Title = "Hitbox zombie", Default = false })
+
+    Toggle:OnChanged(function(value)
+        getgenv().hitboxNPC = value 
+    end)
+
+local Slider = Tabs.Main:AddSlider("Slider", {
+        Title = "Hitbox size",
+        Description = "",
+        Default = 13,
+        Min = 0,
+        Max = 29,
+        Rounding = 1,
+        Callback = function(value)
+            getgenv().hitboxValue = value 
+        end
+    })
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    Tabs.TpT:AddSection("Train")
+
+Tabs.TpT:AddButton({
+    Title = "Tp to train",
+    Callback = function()
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shade-vex/KJ/refs/heads/main/TPtotrain.txt"))()
+        end)
+    end
+})
+
+
+
+
+Tabs.TpT:AddSection("Bases")
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local gameWorkspace = game:GetService("Workspace") 
+
+
+
+
+
+
+
+
+
+        Tabs.TpT:AddButton({
+            Title = "Tp to tesla lab",
+            Callback = function()
+                local Player = game.Players.LocalPlayer
+                if not Player.Character then
+                    Player.CharacterAdded:Wait()
+                end
+                local Character = Player.Character
+                if Character and Character:FindFirstChild("HumanoidRootPart") then
+                    local HRP = Character.HumanoidRootPart
+                    local HUM = Character:FindFirstChildOfClass("Humanoid")
+                    
+                   
+                    local originalWalkSpeed = HUM.WalkSpeed
+                    
+                   
+                    HUM.WalkSpeed = 0
+                    
+                    
+                    local Generator = workspace:WaitForChild("TeslaLab"):WaitForChild("Generator")
+                    local modelPosition = Generator:GetPivot().Position
+                    HRP:PivotTo(CFrame.new(modelPosition + Vector3.new(0, 5, 0))) 
+                    HRP.Anchored = true 
+                    
+                    task.wait(2) 
+                    
+                    
+                    local RuntimeItems = workspace:WaitForChild("RuntimeItems")
+                    local function findClosestAvailableSeat()
+                        local closestSeat = nil
+                        local minDistance = math.huge
+                        local playerPos = HRP.Position
+                        
+                        for _, chair in pairs(RuntimeItems:GetChildren()) do
+                            if chair:IsA("Model") and chair.Name == "Chair" then
+                                local seat = chair:FindFirstChild("Seat")
+                                if seat and seat:IsA("Seat") and seat.Occupant == nil then
+                                    local seatPos = seat.Position
+                                    local distance = (seatPos - playerPos).Magnitude
+                                    if distance < minDistance then
+                                        minDistance = distance
+                                        closestSeat = seat
+                                    end
+                                end
+                            end
+                        end
+                        return closestSeat
+                    end
+                    
+                    
+                    local seat = findClosestAvailableSeat()
+                    if seat then
+                        HRP.Anchored = true 
+                        HRP:PivotTo(seat.CFrame + Vector3.new(0, 3, 0)) 
+                        
+                       
+                        task.delay(0.15, function()
+                            if HRP and HRP.Anchored then
+                                HRP.Anchored = false
+                            end
+                        end)
+                        
+                       
+                        task.delay(0.1, function()
+                            if HRP and HRP.Anchored then
+                                HRP.Anchored = false
+                            end
+                        end)
+                        
+                        task.wait(0.5)
+                        seat:Sit(HUM) 
+                    else
+                        HRP.Anchored = false 
+                    end
+                    
+                    
+                    task.wait(1)
+                    HUM.WalkSpeed = originalWalkSpeed
+                end
+
+            end
+        })
+
+
+
+
+Tabs.TpT:AddButton({
+    Title = "Tp to fast castle",
+    Callback = function()
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shade-vex/KJ/refs/heads/main/FASTCASTLE.txt"))()
+        end)
+    end
+})
+
+
+
+
+Tabs.TpT:AddButton({
+    Title = "Tp to fort",
+    Callback = function()
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shade-vex/KJ/refs/heads/main/Tpfort.lua.txt"))()
+        end)
+    end
+})
+
+
+
+Tabs.TpT:AddButton({
+    Title = "Teleport to sterling",
+    Callback = function()
+        pcall(function()
+          
+            local originalSetCore = game:GetService("StarterGui").SetCore
+            local blocked = {"SendNotification"}
+
+            hookfunction(originalSetCore, function(self, method, ...)
+                if table.find(blocked, method) then
+                    return 
+                end
+                return originalSetCore(self, method, ...)
+            end)
+
+       
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Shade-vex/KJ/refs/heads/main/TPsterling.txt"))()
+        end)
+    end
+})
+
+
+
+Tabs.Visual:AddSection("Bypass")
+
+
+
+local player = game:GetService("Players").LocalPlayer
+    local UserInputService = game:GetService("UserInputService")
+    local StarterGui = game:GetService("StarterGui")
+
+    local BypassBandageT = Tabs.Visual:AddToggle("BypassBandageT", {
+        Title = "Bypass dandage delay",
+        Description = "Press 'R' to instantly use bandage.",
+        Default = false
+    })
+
+    getgenv().bandageBypassEnabled = false
+    local bandageButton
+    local bandageConnection
+
+    local function detectMobile()
+        return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled
+    end
+
+    local bandageDebounce = false
+    local function useBandage()
+        if bandageDebounce then return end
+        bandageDebounce = true
+
+        local character = player.Character
+        if character then
+            local bandage = character:FindFirstChild("Bandage")
+            if bandage and bandage:IsA("Tool") then
+                bandage.Use:FireServer()
+            end
+        end
+
+        bandageDebounce = false
+    end
+
+    BypassBandageT:OnChanged(function(Value)
+        getgenv().bandageBypassEnabled = Value
+
+        if not Value and bandageButton then
+            bandageButton:Destroy()
+            bandageButton = nil
+        end
+
+        if not Value and bandageConnection then
+            bandageConnection:Disconnect()
+            bandageConnection = nil
+        end
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if getgenv().bandageBypassEnabled and input.KeyCode == Enum.KeyCode.R then
+            useBandage()
+        end
+    end)
+
+    local function createMobileButton()
+        if bandageButton or not getgenv().bandageBypassEnabled or not detectMobile() then return end
+
+        bandageButton = Instance.new("TextButton")
+        bandageButton.Name = "BandageButton"
+        bandageButton.Size = UDim2.new(0, 85, 0, 45) 
+        bandageButton.Position = UDim2.new(0.88, 0, 0.75, 0) 
+        bandageButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) 
+        bandageButton.TextColor3 = Color3.fromRGB(0, 0, 0) 
+        bandageButton.Text = "Bandage"
+        bandageButton.Font = Enum.Font.GothamBold
+        bandageButton.TextSize = 18
+        bandageButton.BackgroundTransparency = 0.2 
+        bandageButton.BorderSizePixel = 0
+        bandageButton.AutoButtonColor = true
+        bandageButton.Parent = StarterGui:SetCore("TopbarEnabled", false) and StarterGui
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 12)
+        corner.Parent = bandageButton
+
+        local shadow = Instance.new("UIStroke")
+        shadow.Thickness = 2
+        shadow.Color = Color3.fromRGB(0, 0, 0)
+        shadow.Transparency = 0.5
+        shadow.Parent = bandageButton
+
+        bandageButton.MouseButton1Click:Connect(useBandage)
+    end
+
+    bandageConnection = player.Character.ChildAdded:Connect(function(child)
+        if getgenv().bandageBypassEnabled and child:IsA("Tool") and child.Name == "Bandage" then
+            createMobileButton()
+        end
+    end)
+
+
+    local ReloadToggle = Tabs.Visual:AddToggle("ReloadToggle", {Title = "Bypass reload delay", Default = false})
+    local ReloadStatus = false
+    local originalReloadTimes = {}
+
+    local function bypassReloadDelay()
+        local player = game:GetService("Players").LocalPlayer
+
+        while ReloadStatus do
+            local character = player.Character
+            if character then
+                for _, tool in pairs(character:GetChildren()) do
+                    if tool:IsA("Tool") and tool:FindFirstChild("WeaponConfiguration") then
+                        local config = tool.WeaponConfiguration
+                        local reloadDuration = config:FindFirstChild("ReloadDuration")
+                        
+                        if reloadDuration then
+                            
+                            if not originalReloadTimes[tool] then
+                                originalReloadTimes[tool] = reloadDuration.Value
+                            end
+                            
+                            reloadDuration.Value = 0
+                        end
+                    end
+                end
+            end
+            task.wait(0.1) 
+        end
+    end
+
+    local function restoreReloadDelay()
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character
+
+        if character then
+            for _, tool in pairs(character:GetChildren()) do
+                if tool:IsA("Tool") and tool:FindFirstChild("WeaponConfiguration") then
+                    local config = tool.WeaponConfiguration
+                    local reloadDuration = config:FindFirstChild("ReloadDuration")
+
+                    if reloadDuration and originalReloadTimes[tool] then
+                        reloadDuration.Value = originalReloadTimes[tool] 
+                    end
+                end
+            end
+        end
+        table.clear(originalReloadTimes) 
+    end
+
+    ReloadToggle:OnChanged(function(Value)
+        ReloadStatus = Value
+        if ReloadStatus then
+            bypassReloadDelay()
+        else
+            restoreReloadDelay()
+        end
+    end)
+
+    
+    game.Players.LocalPlayer.CharacterAdded:Connect(function()
+        if not ReloadStatus then
+            restoreReloadDelay()
+        end
+    end)
+
+    local FireDeToggle = Tabs.Visual:AddToggle("FireDeToggle", {Title = "Bypass fire delay", Default = false})
+    local FireStatus = false
+    local originalFireTimes = {}
+
+    local function bypassFireDelay()
+        local player = game:GetService("Players").LocalPlayer
+
+        while FireStatus do
+            local character = player.Character
+            if character then
+                for _, tool in pairs(character:GetChildren()) do
+                    if tool:IsA("Tool") and tool:FindFirstChild("WeaponConfiguration") then
+                        local config = tool.WeaponConfiguration
+                        local fireDuration = config:FindFirstChild("FireDelay")
+                        
+                        if fireDuration then
+                           
+                            if not originalFireTimes[tool] then
+                                originalFireTimes[tool] = fireDuration.Value
+                            end
+
+                            fireDuration.Value = 0.15
+                        end
+                    end
+                end
+            end
+            task.wait(0.1) 
+        end
+    end
+
+    local function restoreFireDelay()
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character
+
+        if character then
+            for _, tool in pairs(character:GetChildren()) do
+                if tool:IsA("Tool") and tool:FindFirstChild("WeaponConfiguration") then
+                    local config = tool.WeaponConfiguration
+                    local fireDuration = config:FindFirstChild("FireDelay")
+
+                    if fireDuration and originalFireTimes[tool] then
+                        fireDuration.Value = originalFireTimes[tool] 
+                    end
+                end
+            end
+        end
+        table.clear(originalFireTimes) 
+    end
+
+    FireDeToggle:OnChanged(function(Value)
+        FireStatus = Value
+        if FireStatus then
+            bypassFireDelay()
+        else
+            restoreFireDelay()
+        end
+    end)
+
+    
+    game.Players.LocalPlayer.CharacterAdded:Connect(function()
+        if not FireStatus then
+            restoreFireDelay()
+        end
+    end)
+
+    local UIS = game:GetService("UserInputService")
+    local SkipHoldToggle = Tabs.Visual:AddToggle("SkipHoldToggle", {Title = "Bypass hold prompt", Default = false})
+
+    local function skipHoldPrompt(prompt)
+        if prompt and prompt:IsA("ProximityPrompt") and prompt.HoldDuration > 0 then
+           
+            if prompt:GetAttribute("OriginalHold") == nil then
+                prompt:SetAttribute("OriginalHold", prompt.HoldDuration)
+            end
+            prompt.HoldDuration = 0 
+        end
+    end
+
+    local function enableSkipHold()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                skipHoldPrompt(obj)
+            end
+        end
+
+       
+        local connection
+        connection = workspace.DescendantAdded:Connect(function(obj)
+            task.wait(0.1) 
+            if SkipHoldToggle.Value then
+                skipHoldPrompt(obj)
+            else
+                connection:Disconnect() 
+            end
+        end)
+    end
+
+    local function disableSkipHold()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("ProximityPrompt") then
+                local originalHold = obj:GetAttribute("OriginalHold")
+                if originalHold then
+                    obj.HoldDuration = originalHold 
+                    obj:SetAttribute("OriginalHold", nil) 
+                end
+            end
+        end
+    end
+
+    SkipHoldToggle:OnChanged(function()
+        if SkipHoldToggle.Value then
+            enableSkipHold()
+        else
+            disableSkipHold()
+        end
+    end)
+
+
+
+
+    
+Tabs.Visual:AddSection("Visual")
+
+
+Tabs.Visual:AddButton({
+    Title = "Third person",
+    Callback = function()
+       local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local Player = Players.LocalPlayer
+  Player.CameraMode = Enum.CameraMode.Classic 
+    end
+})
+
+
+local CtimeToggle = Tabs.Visual:AddToggle("CtimeToggle", {
+        Title = "Countdown",
+        Description = "10 minutes countdown",
+        Default = false
+    })
+    
+   
+    local CountdownGui = Instance.new("ScreenGui")
+    CountdownGui.Name = "CountdownUI"
+    CountdownGui.ResetOnSpawn = false
+    CountdownGui.IgnoreGuiInset = true
+    CountdownGui.Parent = game:GetService("CoreGui")
+    
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 150, 0, 50)
+    Frame.Position = UDim2.new(0.5, -75, 0.15, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.BackgroundTransparency = 0.1
+    Frame.BorderSizePixel = 0
+    Frame.AnchorPoint = Vector2.new(0.5, 0)
+    Frame.Active = true
+    Frame.Draggable = true
+    Frame.Parent = CountdownGui
+    Frame.Visible = false
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = Frame
+    
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Color3.fromRGB(255, 255, 255)
+    UIStroke.Thickness = 1.5
+    UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    UIStroke.Parent = Frame
+    
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = "10:00"
+    Label.Font = Enum.Font.FredokaOne
+    Label.TextScaled = true
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Parent = Frame
+    
+    local countdownTime = 10 * 60 
+    local running = false
+    local lastTimeChecked = os.time()
+    local pausedTime = nil
+
+    local function formatTime(seconds)
+        local minutes = math.floor(seconds / 60)
+        local secs = seconds % 60
+        return string.format("%02d:%02d", minutes, secs)
+    end
+    
+   
+    local function updateCountdown()
+        Label.Text = formatTime(countdownTime)
+    end
+
+    
+    task.spawn(function()
+        while countdownTime > 0 do
+            task.wait(1)
+            if running then
+                local now = os.time()
+                local delta = now - lastTimeChecked
+                countdownTime -= delta
+                lastTimeChecked = now
+                if countdownTime < 0 then
+                    countdownTime = 0
+                end
+                updateCountdown()
+            end
+        end
+    end)
+
+   
+    CtimeToggle:OnChanged(function(Value)
+        Frame.Visible = Value
+        if Value then
+            if pausedTime then
+           
+                local now = os.time()
+                local delta = now - pausedTime
+                countdownTime -= delta
+                pausedTime = nil
+            end
+            lastTimeChecked = os.time()
+            running = true
+        else
+            running = false
+            pausedTime = os.time() 
+        end
+    end)
+
+
+
+
+local Toggle = Tabs.Visual:AddToggle("MyToggle", {
+	Title = "No clip",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(Value)
+getgenv().NoclipEnabled = Value 
+        local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local function noclip()
+    local player = Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part.CanCollide == true then
+            part.CanCollide = false
+        end
+    end
+end
+local function noclipLoop()
+    RunService.Stepped:Connect(function()
+        if getgenv().NoclipEnabled then
+            noclip()
+        end
+    end)
+end
+noclipLoop()
+end)
+
+local IJ = false
+
+
+local Toggle = Tabs.Visual:AddToggle("MyToggle", {
+	Title = "Inf jump",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(state)
+IJ = state
+      game:GetService("UserInputService").JumpRequest:Connect(function()
+          if IJ then
+              game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass('Humanoid'):ChangeState("Jumping")
+          end
+      end)
+end)
+
+
+
+local Toggle = Tabs.Visual:AddToggle("MyToggle", {
+	Title = "Full bright",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(Value)
+getgenv().fullbright = Value
+local Lighting = game:GetService("Lighting")
+local originalBrightness = Lighting.Brightness
+local originalGlobalShadows = Lighting.GlobalShadows
+local originalAmbient = Lighting.Ambient
+local function applyFullBright()
+    if getgenv().fullbright then
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    else
+        Lighting.Brightness = originalBrightness
+        Lighting.GlobalShadows = originalGlobalShadows
+        Lighting.Ambient = originalAmbient
+    end
+end
+game:GetService("RunService").RenderStepped:Connect(applyFullBright)
+end)
+
+
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local isHoldingW = false
+
+local Toggle = Tabs.Visual:AddToggle("MyToggle", {
+	Title = "Auto train",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(state)
+isHoldingW = state
+        if isHoldingW then
+            task.spawn(function()
+                while isHoldingW do
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.W, false, game)
+                    task.wait()
+                end
+            end)
+        else
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, game)
+        end
+end)
+
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+
+local Toggle = Tabs.Visual:AddToggle("MyToggle", {
+	Title = "No fog",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(Value)
+           if Value then
+            local sky = Lighting:FindFirstChild("GrayCloudSky")
+            if sky then
+                sky.Parent = Lighting.Bloom
+            end
+        else
+            local skyInBloom = Lighting.Bloom:FindFirstChild("GrayCloudSky")
+            if skyInBloom then
+                skyInBloom.Parent = Lighting
+            end
+        end
+end)
+
+
+Tabs.Local:AddSection("Farm")
+
+local player = game.Players.LocalPlayer
+getgenv().e = false
+local Toggle = Tabs.Local:AddToggle("MyToggle", {
+	Title = "Teleport to win",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(value)
+getgenv().e = value
+if getgenv().e == true then
+while getgenv().e == true do
+wait()
+player.Character:PivotTo(CFrame.new(-429.245911, 27.5728207, -49040.9062, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+end
+end
+end)
+
+
+Tabs.Local:AddSection("Local")
+
+local player2 = game.Players.LocalPlayer
+    local humanoid = player2.Character and player2.Character:FindFirstChildOfClass("Humanoid")
+    local WSToggle = Tabs.Local:AddToggle("WSToggle", {Title = "Speed Boost", Default = false})
+
+    local stepIncrease = 0.2 
+    local defaultSpeed = humanoid and humanoid.WalkSpeed or 16 
+    local speedBoost = 1.2 
+    local boostedSpeed = defaultSpeed + speedBoost 
+    local speedLoop
+
+   WSToggle:OnChanged(function(Value)
+        if humanoid then
+            if Value then
+                boostedSpeed = humanoid.WalkSpeed + speedBoost 
+                speedLoop = game:GetService("RunService").RenderStepped:Connect(function()
+                    if humanoid.WalkSpeed < boostedSpeed then
+                        humanoid.WalkSpeed = math.min(humanoid.WalkSpeed + stepIncrease, boostedSpeed)
+                    end
+                end)
+            else
+                if speedLoop then
+                    speedLoop:Disconnect()
+                    speedLoop = nil
+                end
+                humanoid.WalkSpeed = defaultSpeed 
+            end
+        end
+    end)
+
+    local player3 = game:GetService("Players").LocalPlayer
+    local userInputService = game:GetService("UserInputService")
+    local runService = game:GetService("RunService")
+    local jumpBoost = 13.5 
+    local jumpConnection = nil
+
+    local JumpBoostToggle = Tabs.Local:AddToggle("JumpBoostToggle", {
+        Title = "Jump boost",
+        Default = false
+    })
+
+    local function applyJumpBoost(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        local rootPart = character:WaitForChild("HumanoidRootPart")
+
+        local function onJumpRequest()
+            if humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+                rootPart.Velocity = Vector3.new(rootPart.Velocity.X, rootPart.Velocity.Y + jumpBoost, rootPart.Velocity.Z)
+            end
+        end
+
+        if JumpBoostToggle.Value then
+            jumpConnection = userInputService.JumpRequest:Connect(onJumpRequest)
+        else
+            if jumpConnection then
+                jumpConnection:Disconnect()
+                jumpConnection = nil
+            end
+        end
+    end
+
+   JumpBoostToggle:OnChanged(function(Value)
+        if player3.Character then
+            applyJumpBoost(player3.Character)
+        end
+        player3.CharacterAdded:Connect(applyJumpBoost)
+    end)
+    
+
+
+local Slider = Tabs.Local:AddSlider("Slider", {
+        Title = "Fov",
+        Description = "",
+        Default = 70,
+        Min = 0,
+        Max = 120,
+        Rounding = 1,
+        Callback = function(fov)
+            workspace.CurrentCamera.FieldOfView = fov
+        end
+    })
+    
+
+
+getgenv().espitem = false
+getgenv().espname = false 
+getgenv().espdistance = false
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ESPItems = {}
+
+
+local function CreateESP(item, color)
+    if not item:IsA("Model") or not item.PrimaryPart then return end
+    if ESPItems[item] then return end 
+
+   
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ItemESP"
+    billboard.Adornee = item.PrimaryPart
+    billboard.Size = UDim2.new(0, 120, 0, 30)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.LightInfluence = 0
+    billboard.Parent = item
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextSize = 16
+    textLabel.Font = Enum.Font.SourceSansSemibold
+    textLabel.TextStrokeTransparency = 0.4
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.TextColor3 = color
+    textLabel.Parent = billboard
+
+    ESPItems[item] = {
+        Billboard = billboard,
+        Label = textLabel
+    }
+end
+
+
+local function CleanupESP()
+    for item, esp in pairs(ESPItems) do
+        if not item or not item:IsDescendantOf(workspace) or not item.PrimaryPart or not getgenv().espitem then
+            if esp.Billboard then esp.Billboard:Destroy() end
+            ESPItems[item] = nil
+        end
+    end
+end
+
+
+local function UpdateESP()
+    if not getgenv().espitem then
+        CleanupESP()
+        return
+    end
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then return end
+
+    for _, item in ipairs(runtimeItems:GetDescendants()) do
+        if item:IsA("Model") and item.PrimaryPart then
+            CreateESP(item, Color3.fromRGB(255, 0, 0))
+            local esp = ESPItems[item]
+            if esp then
+                local label = esp.Label
+                label.Text = ""
+
+                if getgenv().espname then
+                    label.Text = item.Name
+                end
+
+                if getgenv().espdistance then
+                    local distance = math.floor((root.Position - item.PrimaryPart.Position).Magnitude)
+                    label.Text = label.Text .. " [" .. distance .. "m]"
+                end
+            end
+        end
+    end
+
+    CleanupESP()
+end
+
+
+task.spawn(function()
+    while true do
+        pcall(UpdateESP)
+        task.wait(0.5)
+    end
+end)
+
+Tabs.Esp:AddSection("Item")
+
+
+
+
+
+local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp item",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(Value)
+getgenv().espitem = Value
+end)
+
+local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp name",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(Value)
+getgenv().espname = Value      
+end)
+
+
+
+
+
+local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp distance",
+	Description = "",
+	Default = false
+})
+Toggle:OnChanged(function(Value)
+getgenv().espdistance = Value
+end)
+
+
+Tabs.Esp:AddSection("Player")
+
+
+local ESP = loadstring(game:HttpGet("https://kiriot22.com/releases/ESP.lua"))()
+ESP:Toggle(true)
+ESP.Players = false
+ESP.Tracers = false
+ESP.Boxes = false
+ESP.Names = false
+ESP.TeamColor = false
+ESP.TeamMates = true
+
+   
+   
+   
+   
+   local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp player",
+	Default = false 
+})
+Toggle:OnChanged(function(Value)
+	ESP.Players = Value
+end)
+
+
+
+
+
+
+local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp name",
+	Default = false 
+})
+Toggle:OnChanged(function(Value)
+	ESP.Names = Value
+end)
+
+
+
+local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp box",
+	Default = false 
+})
+Toggle:OnChanged(function(Value)
+	ESP.Boxes = Value
+end)
+
+
+local Toggle = Tabs.Esp:AddToggle("MyToggle", {
+	Title = "Esp tracer",
+	Default = false 
+})
+Toggle:OnChanged(function(Value)
+	ESP.Tracers = Value
+end)
+
+
+
+
+
+
+
+
+Tabs.Misc:AddButton({
+    Title = "Teleport main game",
+    Callback = function()
+        local TeleportService = game:GetService('TeleportService')
+				GameId = 116495829188952
+				TeleportService:Teleport(GameId, game.Players.LocalPlayer)
+    end
+})
+
+
+
+
+
+
+Tabs.Misc:AddButton({
+    Title = "Rejoin",
+    Callback = function()
+        local ts = game:GetService("TeleportService")
+local p = game:GetService("Players").LocalPlayer
+ts:Teleport(game.PlaceId, p)
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+
+SaveManager:IgnoreThemeSettings()
+
+
+SaveManager:SetIgnoreIndexes({})
+
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "ZGT Hub",
+    Content = "The script has been loaded",
+    Duration = 8
+})
+
+
+SaveManager:LoadAutoloadConfig()
+
+    
