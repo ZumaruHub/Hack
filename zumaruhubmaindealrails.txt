@@ -1,0 +1,711 @@
+local CoreGui = game:GetService("StarterGui")
+CoreGui:SetCore("SendNotification", {
+    Title = "Tbao Hub",
+    Text = "Loading script",
+    Icon = "rbxthumb://type=Asset&id=71014873973869&w=150&h=150",
+    Duration = 4,
+    Callback = AllowRunServiceBind,
+})
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Window = Fluent:CreateWindow({
+    Title = "Tbao Hub | Dead Rails",
+    SubTitle = "by thaibao7444",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+-- Create Tabs
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "swords" }),
+    Local = Window:AddTab({ Title = "Local", Icon = "user" }),
+    Farm = Window:AddTab({ Title = "Farm", Icon = "zap" }),
+    Esp = Window:AddTab({ Title = "Esp", Icon = "eye" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map-pin" }),
+    Info = Window:AddTab({ Title = "Info", Icon = "info" })
+}
+
+-- Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Global variables
+local aimbotEnabled = false
+_G.AutoSwingEnabled = false
+_G.AutoSwingTask = nil
+getgenv().Smoothness = 0.4
+getgenv().aimbotEnabled = false
+getgenv().aimbotFOV = 20
+getgenv().aimbotFOVColor = Color3.fromRGB(255, 0, 0)
+getgenv().aimbotPart = "Head"
+getgenv().hitboxNPC = false
+getgenv().hitboxValue = 7
+getgenv().hitboxColor = Color3.new(1, 0, 0)
+getgenv().fullbright = false
+getgenv().clickTeleportEnabled = false
+getgenv().NoclipEnabled = false
+getgenv().e = false
+getgenv().espitem = false
+getgenv().espname = false
+getgenv().espdistance = false
+
+-- Info Tab
+Tabs.Info:AddParagraph({
+    Title = "Tbao Hub",
+    Content = "Join our discord community to receive information about the next update\nDiscord: discord.gg/bYb3EweNk7"
+})
+
+-- Main Tab
+Tabs.Main:AddSection("Weapon")
+
+-- Melee Aura Toggle
+Tabs.Main:AddToggle("MeleeAura", {
+    Title = "Melee Aura",
+    Default = false,
+    Callback = function(state)
+        if state then
+            local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local Humanoid = Character:WaitForChild("Humanoid")
+            local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+            local function getTool()
+                for _, tool in ipairs(Character:GetChildren()) do
+                    if tool:IsA("Tool") and tool:FindFirstChild("MeleeSwing") and tool.Parent == Character then
+                        return tool
+                    end
+                end
+                return nil
+            end
+
+            local function checkNPCs()
+                local tool = getTool()
+                if Humanoid.Health <= 0 or not tool then return end
+                local RemoteEvent = tool:FindFirstChild("SwingEvent")
+                if not RemoteEvent or tool.Parent ~= Character then return end
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    local humanoid, rootPart = obj:FindFirstChild("Humanoid"), obj:FindFirstChild("HumanoidRootPart")
+                    if humanoid and humanoid.Health > 0 and not Players:GetPlayerFromCharacter(obj) then
+                        local targetPos = rootPart and rootPart.Position or humanoid.Position
+                        if (HumanoidRootPart.Position - targetPos).Magnitude <= 18 then
+                            RemoteEvent:FireServer(targetPos)
+                        end
+                    end
+                end
+            end
+
+            _G.AutoSwingTask = task.spawn(function()
+                while task.wait(0.3) do 
+                    if not _G.AutoSwingEnabled then break end
+                    checkNPCs() 
+                end
+            end)
+            _G.AutoSwingEnabled = true
+        else
+            _G.AutoSwingEnabled = false
+            if _G.AutoSwingTask then
+                task.cancel(_G.AutoSwingTask)
+                _G.AutoSwingTask = nil
+            end
+        end
+    end
+})
+
+-- Gun Aura Toggle
+Tabs.Main:AddToggle("GunAura", {
+    Title = "Gun Aura",
+    Default = false,
+    Callback = function(value)
+        aimbotEnabled = value
+        if aimbotEnabled then
+            spawn(function()
+                local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart", 5)
+
+                local utility = {}
+                function utility.getEquippedTool()
+                    for _, tool in ipairs(Character:GetChildren()) do
+                        if tool:IsA("Tool") and tool:FindFirstChild("ClientWeaponState") then
+                            return tool
+                        end
+                    end
+                    return nil
+                end
+
+                function utility.getClosestNPC(maxDistance)
+                    local closestNPC, minDist = nil, maxDistance or 30
+                    for _, obj in ipairs(Workspace:GetDescendants()) do
+                        local root = obj:FindFirstChild("HumanoidRootPart")
+                        local humanoid = obj:FindFirstChild("Humanoid")
+                        if root and humanoid and humanoid.Health > 0 and not Players:GetPlayerFromCharacter(obj) then
+                            local distance = (HumanoidRootPart.Position - root.Position).Magnitude
+                            if distance < minDist then
+                                closestNPC, minDist = humanoid, distance
+                            end
+                        end
+                    end
+                    return closestNPC
+                end
+
+                function utility.reloadWeapon(weapon, state)
+                    local ammo = state:FindFirstChild("CurrentAmmo")
+                    if ammo and ammo.Value == 0 and not state.IsReloading.Value then
+                        ReplicatedStorage.Remotes.Weapon.Reload:FireServer(Workspace:GetServerTimeNow(), weapon)
+                        repeat task.wait() until ammo.Value > 0
+                    end
+                end
+
+                function utility.fireAtNPC(npc, weapon, state)
+                    if npc and weapon and state then
+                        local ammo = state:FindFirstChild("CurrentAmmo")
+                        if ammo and ammo.Value > 0 then
+                            ReplicatedStorage.Remotes.Weapon.Shoot:FireServer(Workspace:GetServerTimeNow(), weapon, HumanoidRootPart.CFrame, { ["1"] = npc })
+                        end
+                    end
+                end
+
+                while aimbotEnabled and task.wait(0.2) do
+                    local npc = utility.getClosestNPC(30)
+                    local weapon = utility.getEquippedTool()
+                    if weapon then
+                        local state = weapon:FindFirstChild("ClientWeaponState")
+                        if state then
+                            utility.reloadWeapon(weapon, state)
+                            utility.fireAtNPC(npc, weapon, state)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+Tabs.Main:AddSection("Combat")
+
+-- Aimbot setup
+local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+local validNPCs = {}
+
+local DrawingFOV = Drawing.new("Circle")
+DrawingFOV.Radius = getgenv().aimbotFOV
+DrawingFOV.Thickness = 1
+DrawingFOV.Filled = false
+DrawingFOV.Transparency = 1
+DrawingFOV.Color = getgenv().aimbotFOVColor
+DrawingFOV.Visible = getgenv().aimbotEnabled
+
+local function isNPC(obj)
+    return obj:IsA("Model") 
+        and obj:FindFirstChild("Humanoid") 
+        and obj.Humanoid.Health > 0 
+        and obj:FindFirstChild(getgenv().aimbotPart) 
+        and not Players:GetPlayerFromCharacter(obj)
+end
+
+local function updateNPCs()
+    validNPCs = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if isNPC(obj) then
+            table.insert(validNPCs, obj)
+        end
+    end
+end
+
+local function getClosestNPC()
+    if not getgenv().aimbotEnabled then return nil end 
+
+    local closestNPC, closestDistance = nil, math.huge
+    local fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    for _, npc in ipairs(validNPCs) do
+        local part = npc:FindFirstChild(getgenv().aimbotPart)
+        if part then
+            local screenPosition, onScreen = Camera:WorldToViewportPoint(part.Position)
+            if onScreen then
+                local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - fovCenter).Magnitude
+                if distance < getgenv().aimbotFOV and distance < closestDistance then
+                    closestNPC = npc
+                    closestDistance = distance
+                end
+            end
+        end
+    end
+    return closestNPC
+end
+
+RunService.RenderStepped:Connect(function()
+    DrawingFOV.Visible = getgenv().aimbotEnabled
+    DrawingFOV.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    DrawingFOV.Radius = getgenv().aimbotFOV 
+
+    if getgenv().aimbotEnabled then
+        local targetNPC = getClosestNPC()
+        if targetNPC then
+            local targetPart = targetNPC:FindFirstChild(getgenv().aimbotPart)
+            if targetPart then
+                local targetPosition = targetPart.Position
+                local cameraPosition = Camera.CFrame.Position
+                local direction = (targetPosition - cameraPosition).Unit
+                local targetCFrame = CFrame.new(cameraPosition, cameraPosition + direction)
+                Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, getgenv().Smoothness)
+            end
+        end
+    end
+end)
+
+workspace.DescendantAdded:Connect(function(descendant)
+    if isNPC(descendant) then
+        table.insert(validNPCs, descendant)
+    end
+end)
+
+workspace.DescendantRemoving:Connect(function(descendant)
+    for i = #validNPCs, 1, -1 do
+        if validNPCs[i] == descendant then
+            table.remove(validNPCs, i)
+            break
+        end
+    end
+end)
+
+updateNPCs()
+
+-- Aimbot Toggle
+Tabs.Main:AddToggle("AimbotZombie", {
+    Title = "Aimbot Zombie",
+    Default = false,
+    Callback = function(value)
+        getgenv().aimbotEnabled = value
+    end
+})
+
+-- Aimbot Part Dropdown
+Tabs.Main:AddDropdown("AimbotPart", {
+    Title = "Aimbot Part",
+    Values = {"Head", "HumanoidRootPart"},
+    Default = 1,
+    Callback = function(value)
+        getgenv().aimbotPart = value
+    end
+})
+
+-- Aimbot FOV Slider
+Tabs.Main:AddSlider("AimbotFOV", {
+    Title = "Aimbot FOV",
+    Min = 1,
+    Max = 150,
+    Default = 20,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().aimbotFOV = value
+    end
+})
+
+Tabs.Main:AddSection("Hitbox")
+
+-- Hitbox system
+local function modifyHitboxes()
+    for _, npc in ipairs(validNPCs) do
+        local rootPart = npc:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            if getgenv().hitboxNPC then
+                rootPart.Size = Vector3.new(getgenv().hitboxValue, getgenv().hitboxValue, getgenv().hitboxValue)
+                rootPart.Transparency = 0.5
+                rootPart.Color = getgenv().hitboxColor
+                rootPart.Material = Enum.Material.Neon
+            else
+                rootPart.Size = Vector3.new(2, 2, 1) 
+                rootPart.Transparency = 0
+                rootPart.Material = Enum.Material.Plastic
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    modifyHitboxes()
+end)
+
+-- Hitbox Toggle
+Tabs.Main:AddToggle("HitboxMod", {
+    Title = "Hitbox Mod",
+    Default = false,
+    Callback = function(value)
+        getgenv().hitboxNPC = value
+    end
+})
+
+-- Hitbox Size Slider
+Tabs.Main:AddSlider("HitboxSize", {
+    Title = "Hitbox Size",
+    Min = 1,
+    Max = 15,
+    Default = 7,
+    Rounding = 1,
+    Callback = function(value)
+        getgenv().hitboxValue = value
+    end
+})
+
+-- Local Tab
+Tabs.Local:AddButton({
+    Title = "Third Person",
+    Description = "Switch to third person view",
+    Callback = function()
+        LocalPlayer.CameraMode = Enum.CameraMode.Classic
+    end
+})
+
+-- Full Bright Toggle
+Tabs.Local:AddToggle("FullBright", {
+    Title = "Full Bright",
+    Default = false,
+    Callback = function(value)
+        getgenv().fullbright = value
+        local Lighting = game:GetService("Lighting")
+        local originalBrightness = Lighting.Brightness
+        local originalGlobalShadows = Lighting.GlobalShadows
+        local originalAmbient = Lighting.Ambient
+        
+        local function applyFullBright()
+            if getgenv().fullbright then
+                Lighting.Brightness = 2
+                Lighting.GlobalShadows = false
+                Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            else
+                Lighting.Brightness = originalBrightness
+                Lighting.GlobalShadows = originalGlobalShadows
+                Lighting.Ambient = originalAmbient
+            end
+        end
+        
+        game:GetService("RunService").RenderStepped:Connect(applyFullBright)
+    end
+})
+
+-- No Fog Toggle
+Tabs.Local:AddToggle("NoFog", {
+    Title = "No Fog",
+    Default = false,
+    Callback = function(value)
+        local Lighting = game:GetService("Lighting")
+        if value then
+            local sky = Lighting:FindFirstChild("GrayCloudSky")
+            if sky then
+                sky.Parent = Lighting.Bloom
+            end
+        else
+            local skyInBloom = Lighting.Bloom:FindFirstChild("GrayCloudSky")
+            if skyInBloom then
+                skyInBloom.Parent = Lighting
+            end
+        end
+    end
+})
+
+-- Click Teleport Toggle
+Tabs.Local:AddToggle("ClickTeleport", {
+    Title = "Click Teleport",
+    Default = false,
+    Callback = function(value)
+        getgenv().clickTeleportEnabled = value
+        if value then
+            local mouse = LocalPlayer:GetMouse()
+            mouse.Button1Down:Connect(function()
+                if getgenv().clickTeleportEnabled then
+                    local targetPosition = mouse.Hit.p
+                    LocalPlayer.Character:MoveTo(targetPosition)
+                end
+            end)
+        end
+    end
+})
+
+-- No Clip Toggle
+Tabs.Local:AddToggle("NoClip", {
+    Title = "No Clip",
+    Default = false,
+    Callback = function(value)
+        getgenv().NoclipEnabled = value
+        
+        local function noclip()
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide == true then
+                    part.CanCollide = false
+                end
+            end
+        end
+        
+        RunService.Stepped:Connect(function()
+            if getgenv().NoclipEnabled then
+                noclip()
+            end
+        end)
+    end
+})
+
+-- Infinite Jump Toggle
+local IJ = false
+Tabs.Local:AddToggle("InfJump", {
+    Title = "Infinite Jump",
+    Default = false,
+    Callback = function(state)
+        IJ = state
+        UserInputService.JumpRequest:Connect(function()
+            if IJ then
+                LocalPlayer.Character:FindFirstChildOfClass('Humanoid'):ChangeState("Jumping")
+            end
+        end)
+    end
+})
+
+-- Auto Train Toggle
+local isHoldingW = false
+Tabs.Local:AddToggle("AutoTrain", {
+    Title = "Auto Train",
+    Default = false,
+    Callback = function(state)
+        isHoldingW = state
+        local VirtualInputManager = game:GetService("VirtualInputManager")
+        if isHoldingW then
+            task.spawn(function()
+                while isHoldingW do
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.W, false, game)
+                    task.wait()
+                end
+            end)
+        else
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, game)
+        end
+    end
+})
+
+-- FOV Slider
+Tabs.Local:AddSlider("FOV", {
+    Title = "Field of View",
+    Min = 1,
+    Max = 120,
+    Default = 70,
+    Rounding = 1,
+    Callback = function(fov)
+        workspace.CurrentCamera.FieldOfView = fov
+    end
+})
+
+-- Farm Tab
+Tabs.Farm:AddToggle("TpToWin", {
+    Title = "TP to Win",
+    Default = false,
+    Callback = function(value)
+        getgenv().e = value
+        if getgenv().e then
+            while getgenv().e do
+                wait()
+                LocalPlayer.Character:PivotTo(CFrame.new(-423.948975, 28.555481, -49039.6562, 1, 0, 0, 0, 1, 0, 0, 0, 1))
+            end
+        end
+    end
+})
+
+Tabs.Farm:AddButton({
+    Title = "Show Timer",
+    Description = "Display a 10-minute countdown timer",
+    Callback = function()
+        local function createTimerUI()
+            local screenGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+            local timerFrame = Instance.new("Frame", screenGui)
+            timerFrame.Size = UDim2.new(0, 220, 0, 60)
+            timerFrame.Position = UDim2.new(0.5, -110, 0, 10)
+            timerFrame.AnchorPoint = Vector2.new(0.5, 0)
+            timerFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            timerFrame.BorderSizePixel = 2
+            timerFrame.BorderColor3 = Color3.fromRGB(255, 85, 85)
+
+            local timerLabel = Instance.new("TextLabel", timerFrame)
+            timerLabel.Size = UDim2.new(1, 0, 1, 0)
+            timerLabel.Text = "10:00"
+            timerLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
+            timerLabel.Font = Enum.Font.GothamBlack
+            timerLabel.TextSize = 32
+            timerLabel.BackgroundTransparency = 1
+            return timerLabel
+        end
+
+        local timerLabel = createTimerUI()
+        local function startTimer(duration)
+            local endTime = tick() + duration
+            while tick() < endTime do
+                local remaining = endTime - tick()
+                timerLabel.Text = string.format("%02d:%02d", math.floor(remaining / 60), math.floor(remaining % 60))
+                wait(0.1)
+            end
+            timerLabel.Text = "00:00"
+        end
+        startTimer(600)
+    end
+})
+
+-- ESP Tab
+Tabs.Esp:AddSection("ESP Item")
+
+-- ESP System
+local ESPItems = {}
+
+local function CreateESP(item, color)
+    if not item:IsA("Model") or not item.PrimaryPart then return end
+    if ESPItems[item] then return end 
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ItemESP"
+    billboard.Adornee = item.PrimaryPart
+    billboard.Size = UDim2.new(0, 120, 0, 30)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.LightInfluence = 0
+    billboard.Parent = item
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextSize = 16
+    textLabel.Font = Enum.Font.SourceSansSemibold
+    textLabel.TextStrokeTransparency = 0.4
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.TextColor3 = color
+    textLabel.Parent = billboard
+
+    ESPItems[item] = {
+        Billboard = billboard,
+        Label = textLabel
+    }
+end
+
+local function CleanupESP()
+    for item, esp in pairs(ESPItems) do
+        if not item or not item:IsDescendantOf(workspace) or not item.PrimaryPart or not getgenv().espitem then
+            if esp.Billboard then esp.Billboard:Destroy() end
+            ESPItems[item] = nil
+        end
+    end
+end
+
+local function UpdateESP()
+    if not getgenv().espitem then
+        CleanupESP()
+        return
+    end
+
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then return end
+
+    for _, item in ipairs(runtimeItems:GetDescendants()) do
+        if item:IsA("Model") and item.PrimaryPart then
+            CreateESP(item, Color3.fromRGB(255, 0, 0))
+            local esp = ESPItems[item]
+            if esp then
+                local label = esp.Label
+                label.Text = ""
+
+                if getgenv().espname then
+                    label.Text = item.Name
+                end
+
+                if getgenv().espdistance then
+                    local distance = math.floor((root.Position - item.PrimaryPart.Position).Magnitude)
+                    label.Text = label.Text .. " [" .. distance .. "m]"
+                end
+            end
+        end
+    end
+
+    CleanupESP()
+end
+
+task.spawn(function()
+    while true do
+        pcall(UpdateESP)
+        task.wait(0.5)
+    end
+end)
+
+-- ESP Toggles
+Tabs.Esp:AddToggle("EspItem", {
+    Title = "ESP Item",
+    Default = false,
+    Callback = function(value)
+        getgenv().espitem = value
+    end
+})
+
+Tabs.Esp:AddToggle("EspName", {
+    Title = "ESP Name",
+    Default = false,
+    Callback = function(value)
+        getgenv().espname = value
+    end
+})
+
+Tabs.Esp:AddToggle("EspDistance", {
+    Title = "ESP Distance",
+    Default = false,
+    Callback = function(value)
+        getgenv().espdistance = value
+    end
+})
+
+Tabs.Esp:AddSection("ESP Zombie [Soon]")
+
+-- Teleport Tab
+Tabs.Teleport:AddButton({
+    Title = "Teleport to Main Game",
+    Description = "Teleport to the main game",
+    Callback = function()
+        TeleportService:Teleport(116495829188952, LocalPlayer)
+    end
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Server Hop",
+    Description = "Join a different server",
+    Callback = function()
+        local Http = game:GetService("HttpService")
+        local Api = "https://games.roblox.com/v1/games/"
+        local _place = game.PlaceId
+        local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=100"
+        
+        function ListServers(cursor)
+            local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+            return Http:JSONDecode(Raw)
+        end
+        
+        local Server, Next
+        repeat
+            local Servers = ListServers(Next)
+            Server = Servers.data[1]
+            Next = Servers.nextPageCursor
+        until Server
+        
+        TeleportService:TeleportToPlaceInstance(_place, Server.id, LocalPlayer)
+    end
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Rejoin",
+    Description = "Rejoin the current server",
+    Callback = function()
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end
+})
